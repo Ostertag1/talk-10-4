@@ -1,0 +1,1602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="10-4">
+<meta name="theme-color" content="#FF6B1A">
+<link rel="manifest" href="/manifest.json">
+<title>10-4</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Barlow+Condensed:wght@400;500;600;700;900&family=Inter:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --black: #0D0D0D; --panel: #1E1E1E; --panel2: #272727; --border: #333;
+    --orange: #FF6B1A; --amber: #FFB347; --cream: #F0EDE6; --muted: #777;
+    --red: #E03030; --green: #3DB87A; --blue: #4A9EFF; --purple: #CC88FF;
+  }
+
+  html, body { height: 100%; overflow: hidden; background: var(--black); color: var(--cream); font-family: 'Inter', sans-serif; }
+
+  /* ── SCREENS ── */
+  .screen { position: fixed; inset: 0; display: flex; flex-direction: column; background: var(--black); transform: translateX(100%); transition: transform 0.35s cubic-bezier(0.4,0,0.2,1); z-index: 1; }
+  .screen.active { transform: translateX(0); z-index: 2; }
+  .screen.prev   { transform: translateX(-30%); z-index: 1; }
+
+  /* ── SAFE AREA ── */
+  .safe-top    { height: env(safe-area-inset-top, 44px); background: var(--black); flex-shrink: 0; }
+  .safe-bottom { height: env(safe-area-inset-bottom, 20px); background: var(--black); flex-shrink: 0; }
+
+  /* ── STATUS BAR ── */
+  .status-bar { display: flex; justify-content: space-between; align-items: center; padding: 4px 20px; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+  .status-time { color: var(--cream); }
+  .status-right { color: var(--cream); display: flex; align-items: center; gap: 6px; }
+  .conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); transition: background 0.3s; }
+  .conn-dot.online { background: var(--green); }
+
+  /* ── TYPOGRAPHY SHARED ── */
+  .eyebrow { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; color: var(--orange); margin-bottom: 8px; }
+  .big-heading { font-family: 'Black Han Sans', sans-serif; font-size: 32px; color: var(--cream); line-height: 1.05; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .sub { font-family: 'Inter', sans-serif; font-size: 14px; color: var(--muted); line-height: 1.5; }
+
+  /* ── BUTTONS ── */
+  .btn-primary { width: 100%; background: var(--orange); color: var(--black); border: none; border-radius: 16px; padding: 18px; font-family: 'Black Han Sans', sans-serif; font-size: 17px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; box-shadow: 0 4px 20px rgba(255,107,26,0.35); transition: transform 0.1s, opacity 0.15s; }
+  .btn-primary:active { transform: scale(0.97); }
+  .btn-primary:disabled { opacity: 0.35; }
+  .btn-ghost { width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border); border-radius: 16px; padding: 14px; font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
+  .btn-ghost:active { border-color: var(--orange); color: var(--cream); }
+
+  /* ── INPUTS ── */
+  .input-row { display: flex; align-items: center; background: var(--panel); border: 1.5px solid var(--border); border-radius: 14px; padding: 0 16px; gap: 10px; margin-bottom: 14px; transition: border-color 0.2s; }
+  .input-row:focus-within { border-color: var(--orange); }
+  .input-row input { flex: 1; background: transparent; border: none; outline: none; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 700; color: var(--cream); letter-spacing: 0.5px; padding: 16px 0; }
+  .input-row input::placeholder { color: var(--border); }
+  .input-label { font-family: 'Barlow Condensed', sans-serif; font-size: 17px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+
+  /* ══════════════════════════════════════
+     ONBOARDING
+  ══════════════════════════════════════ */
+  #screen-onboarding { justify-content: center; align-items: center; text-align: center; padding: 40px 32px; gap: 0; }
+  .ob-logo-wrap { margin-bottom: 32px; }
+  .ob-radio { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle at 38% 35%, #3a1f0f, #1a0d05); border: 3px solid #5a2a0a; display: flex; align-items: center; justify-content: center; font-size: 52px; margin: 0 auto 24px; box-shadow: 0 0 60px rgba(255,107,26,0.2); animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)} }
+  .ob-logo { font-family: 'Black Han Sans', sans-serif; font-size: 64px; color: var(--orange); line-height: 1; letter-spacing: -2px; }
+  .ob-logo span { color: var(--cream); }
+  .ob-tagline { font-family: 'Barlow Condensed', sans-serif; font-size: 15px; font-weight: 500; color: var(--muted); letter-spacing: 0.5px; margin-bottom: 48px; }
+  .ob-actions { width: 100%; }
+
+  /* Handle entry */
+  #screen-handle { padding: 0 28px; justify-content: flex-start; }
+  #screen-handle .content { flex: 1; display: flex; flex-direction: column; padding-top: 20px; }
+  .handle-preview-card { background: var(--panel); border: 1.5px solid var(--border); border-radius: 16px; padding: 18px; margin-bottom: 24px; display: flex; align-items: center; gap: 14px; transition: border-color 0.2s; }
+  .handle-preview-card.valid { border-color: var(--orange); }
+  .hav { width: 52px; height: 52px; border-radius: 50%; background: #2a1508; border: 2px solid var(--orange); display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 900; color: var(--orange); flex-shrink: 0; }
+  .hav-name { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--border); }
+  .hav-name.set { color: var(--cream); }
+  .hav-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* Mode picker */
+  #screen-mode { padding: 0 24px; justify-content: flex-start; }
+  #screen-mode .content { flex: 1; display: flex; flex-direction: column; padding-top: 20px; gap: 12px; }
+  .mode-card { flex: 1; border-radius: 18px; border: 2px solid var(--border); padding: 20px; cursor: pointer; display: flex; flex-direction: column; position: relative; transition: border-color 0.2s; }
+  .mode-card.selected.work { border-color: var(--green); background: rgba(61,184,122,0.05); }
+  .mode-card.selected.fun  { border-color: var(--purple); background: rgba(204,136,255,0.05); }
+  .mode-card-icon { font-size: 34px; margin-bottom: 8px; }
+  .mode-badge-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 4px; }
+  .work .mode-badge-label { color: var(--green); }
+  .fun  .mode-badge-label { color: var(--purple); }
+  .mode-title { font-family: 'Black Han Sans', sans-serif; font-size: 24px; color: var(--cream); line-height: 1; margin-bottom: 6px; }
+  .mode-desc  { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .mode-check { position: absolute; top: 14px; right: 14px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.2s; }
+  .selected.work .mode-check { background: var(--green); border-color: var(--green); color: #000; }
+  .selected.fun  .mode-check { background: var(--purple); border-color: var(--purple); color: #000; }
+
+  /* ══════════════════════════════════════
+     RADIO (MAIN PTT)
+  ══════════════════════════════════════ */
+  #screen-radio { justify-content: flex-start; }
+
+  .app-header { padding: 8px 20px 10px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+  .logo { font-family: 'Black Han Sans', sans-serif; font-size: 26px; color: var(--orange); letter-spacing: -1px; }
+  .logo span { color: var(--cream); }
+  .mode-pill { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 4px 10px; border-radius: 5px; cursor: pointer; }
+  .mode-pill.work { background: #1a2a1a; color: var(--green); border: 1px solid var(--green); }
+  .mode-pill.fun  { background: #2a1a3a; color: var(--purple); border: 1px solid var(--purple); }
+
+  .ch-strip { padding: 10px 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; }
+  .ch-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); }
+  .ch-name-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+  .ch-name-text { font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 900; color: var(--cream); }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse-dot 1.4s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.6)} }
+  .ch-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ch-switch-btn { background: var(--panel); border: 1px solid var(--border); color: var(--orange); border-radius: 8px; padding: 8px 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 1px; cursor: pointer; }
+
+  /* Waveform */
+  .wave-wrap { padding: 0 20px; height: 40px; display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .wbar { flex: 1; background: var(--border); border-radius: 2px; height: 6px; transition: height 0.05s, background 0.15s; }
+  .wbar.on { background: var(--orange); }
+
+  /* Who's talking banner */
+  .talking-banner { margin: 0 20px 6px; background: #2a1508; border: 1px solid var(--orange); border-radius: 10px; padding: 8px 14px; display: flex; align-items: center; gap: 10px; opacity: 0; transition: opacity 0.2s; flex-shrink: 0; }
+  .talking-banner.show { opacity: 1; }
+  .talking-av { width: 28px; height: 28px; border-radius: 50%; background: #3a1f0a; border: 1.5px solid var(--orange); display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 900; color: var(--orange); flex-shrink: 0; }
+  .talking-text { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; color: var(--orange); letter-spacing: 0.3px; }
+
+  /* Messages */
+  .msg-area { flex: 1; overflow-y: auto; padding: 0 20px; display: flex; flex-direction: column; gap: 6px; }
+  .msg-area::-webkit-scrollbar { width: 0; }
+  .msg-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); padding: 6px 0 4px; }
+  .msg-item { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: border-color 0.15s; flex-shrink: 0; }
+  .msg-item.playing { border-color: var(--orange); background: #1e1208; }
+  .msg-item:active { border-color: var(--orange); }
+  .msg-av { width: 34px; height: 34px; border-radius: 50%; background: #2a1508; display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 900; color: var(--orange); flex-shrink: 0; }
+  .msg-body { flex: 1; min-width: 0; }
+  .msg-handle { font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 700; color: var(--cream); }
+  .msg-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .msg-play { width: 30px; height: 30px; border-radius: 50%; background: var(--border); display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; transition: background 0.15s; }
+  .msg-item.playing .msg-play { background: var(--orange); }
+  .msg-empty { text-align: center; padding: 32px 0; color: var(--muted); font-family: 'Barlow Condensed', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 1px; }
+
+  /* PTT section */
+  .ptt-section { padding: 12px 20px 8px; display: flex; flex-direction: column; align-items: center; flex-shrink: 0; }
+  .grille { display: flex; align-items: center; gap: 6px; margin-bottom: 14px; width: 240px; }
+  .grille-line { flex: 1; height: 1.5px; background: var(--border); }
+  .grille-text { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 3px; color: var(--border); white-space: nowrap; }
+
+  /* THE BUTTON */
+  .ptt-wrap { position: relative; width: 160px; height: 160px; }
+  .ptt-ring { position: absolute; inset: -8px; border-radius: 50%; background: conic-gradient(var(--orange) 0deg, var(--amber) 90deg, var(--orange) 180deg, #993300 270deg, var(--orange) 360deg); opacity: 0.2; animation: spin 8s linear infinite; transition: opacity 0.15s; }
+  .ptt-btn { position: absolute; inset: 0; border-radius: 50%; background: radial-gradient(circle at 38% 35%, #3a1f0f, #1a0d05 60%, #080400); border: 3px solid #5a2a0a; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; cursor: pointer; user-select: none; -webkit-user-select: none; touch-action: none; -webkit-tap-highlight-color: transparent; transition: transform 0.08s ease, border-color 0.1s; box-shadow: 0 8px 24px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.06); }
+  .ptt-btn.active { transform: scale(0.93) translateY(3px); border-color: var(--orange); box-shadow: 0 2px 10px rgba(0,0,0,0.9), 0 0 30px rgba(255,107,26,0.3); }
+  .ptt-btn.active ~ .ptt-ring { opacity: 0.85; }
+  .ptt-icon { font-size: 36px; pointer-events: none; }
+  .ptt-label { font-family: 'Black Han Sans', sans-serif; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; color: var(--orange); opacity: 0.7; pointer-events: none; transition: opacity 0.1s; }
+  .ptt-btn.active .ptt-label { opacity: 1; color: var(--amber); }
+  @keyframes spin { from{transform:rotate(0)}to{transform:rotate(360deg)} }
+  .ptt-hint { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-top: 12px; transition: color 0.15s; }
+  .ptt-hint.talking { color: var(--orange); }
+
+  /* Util row */
+  .util-row { padding: 8px 20px 6px; display: flex; justify-content: space-around; align-items: center; flex-shrink: 0; }
+  .util-btn { display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; }
+  .util-circle { width: 46px; height: 46px; border-radius: 50%; background: var(--panel); border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 19px; transition: border-color 0.15s, background 0.15s; }
+  .util-circle:active { border-color: var(--orange); background: #2a1508; }
+  .util-circle.active-util { border-color: var(--orange); background: #2a1508; }
+  .util-circle.sos-circle { background: #1a0808; border-color: #5a1515; }
+  .util-circle.sos-circle:active { border-color: var(--red); }
+  .util-tag { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+  .util-tag.sos-tag { color: #5a1515; }
+
+  /* Bottom nav */
+  .bottom-nav { border-top: 1px solid var(--border); padding: 8px 0 4px; display: flex; flex-shrink: 0; }
+  .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; padding: 4px 0; -webkit-tap-highlight-color: transparent; }
+  .nav-icon { font-size: 20px; opacity: 0.35; }
+  .nav-lbl  { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+  .nav-item.active .nav-icon { opacity: 1; }
+  .nav-item.active .nav-lbl  { color: var(--orange); }
+
+  /* ══════════════════════════════════════
+     CHANNELS LIST SCREEN
+  ══════════════════════════════════════ */
+  #screen-channels { justify-content: flex-start; }
+  .ch-list-scroll { flex: 1; overflow-y: auto; padding: 0 20px 16px; }
+  .ch-list-scroll::-webkit-scrollbar { width: 0; }
+  .ch-list-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); padding: 14px 0 8px; }
+  .ch-list-item { background: var(--panel); border: 1.5px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 8px; cursor: pointer; display: flex; align-items: center; gap: 14px; transition: border-color 0.15s; }
+  .ch-list-item:active { border-color: var(--orange); }
+  .ch-list-item.current-ch { border-color: var(--orange); background: #1e1208; }
+  .ch-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .ch-list-body { flex: 1; min-width: 0; }
+  .ch-list-name { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 900; color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ch-list-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ch-list-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .badge-live { font-family: 'Barlow Condensed', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 2px 7px; border-radius: 4px; background: #1a3a1a; color: var(--green); border: 1px solid #2a5a2a; }
+  .ch-member-count { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; color: var(--muted); }
+  .new-ch-fab { position: fixed; bottom: calc(70px + env(safe-area-inset-bottom, 20px)); right: 20px; width: 54px; height: 54px; border-radius: 50%; background: var(--orange); border: none; display: flex; align-items: center; justify-content: center; font-size: 26px; color: var(--black); box-shadow: 0 4px 20px rgba(255,107,26,0.4); cursor: pointer; z-index: 10; }
+
+  /* ══════════════════════════════════════
+     PROFILE SCREEN
+  ══════════════════════════════════════ */
+  #screen-profile { justify-content: flex-start; }
+  .profile-scroll { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
+  .profile-scroll::-webkit-scrollbar { width: 0; }
+  .profile-hero-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 20px; margin-bottom: 8px; display: flex; align-items: center; gap: 16px; }
+  .profile-av { width: 64px; height: 64px; border-radius: 50%; background: radial-gradient(circle at 38% 35%, #3a1f0f, #1a0d05); border: 2.5px solid var(--orange); display: flex; align-items: center; justify-content: center; font-family: 'Barlow Condensed', sans-serif; font-size: 22px; font-weight: 900; color: var(--orange); flex-shrink: 0; box-shadow: 0 0 16px rgba(255,107,26,0.2); }
+  .profile-info { flex: 1; }
+  .profile-handle { font-family: 'Black Han Sans', sans-serif; font-size: 24px; color: var(--cream); line-height: 1; }
+  .profile-handle span { color: var(--orange); }
+  .profile-since { font-size: 12px; color: var(--muted); margin-top: 3px; }
+  .status-pills { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .status-pill { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; padding: 5px 10px; border-radius: 6px; cursor: pointer; border: 1.5px solid var(--border); color: var(--muted); background: var(--panel2); transition: all 0.15s; }
+  .status-pill.active { color: var(--black); border-color: transparent; }
+  .status-pill.shift.active  { background: var(--green); }
+  .status-pill.online.active { background: var(--blue); }
+  .status-pill.dnd.active    { background: var(--red); }
+
+  .pf-section-label { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); padding: 16px 0 8px; }
+  .setting-group { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; margin-bottom: 8px; }
+  .setting-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid #1e1e1e; cursor: pointer; }
+  .setting-item:last-child { border-bottom: none; }
+  .setting-item:active { background: #272727; }
+  .s-icon { width: 34px; height: 34px; border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .s-body { flex: 1; }
+  .s-name { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--cream); }
+  .s-desc { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .s-right { display: flex; align-items: center; gap: 8px; }
+  .s-val { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .s-arrow { color: var(--border); font-size: 16px; }
+  .toggle { width: 44px; height: 26px; border-radius: 13px; background: var(--border); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+  .toggle.on { background: var(--orange); }
+  .toggle-k { width: 20px; height: 20px; border-radius: 50%; background: white; position: absolute; top: 3px; left: 3px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+  .toggle.on .toggle-k { left: 21px; }
+  .danger-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid #1e1e1e; cursor: pointer; }
+  .danger-item:last-child { border-bottom: none; }
+  .danger-item:active { background: #2a0808; }
+  .danger-name { font-family: 'Barlow Condensed', sans-serif; font-size: 16px; font-weight: 700; color: var(--red); }
+
+  /* ══════════════════════════════════════
+     MODALS / SHEETS
+  ══════════════════════════════════════ */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 50; display: flex; flex-direction: column; justify-content: flex-end; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+  .modal-bg.open { opacity: 1; pointer-events: all; }
+  .sheet { background: #1a1a1a; border-radius: 22px 22px 0 0; border: 1px solid var(--border); border-bottom: none; padding-bottom: env(safe-area-inset-bottom, 16px); max-height: 85vh; overflow-y: auto; }
+  .sheet::-webkit-scrollbar { width: 0; }
+  .sheet-handle { width: 40px; height: 4px; background: var(--border); border-radius: 2px; margin: 14px auto 0; }
+  .sheet-header { padding: 16px 20px 14px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .sheet-title { font-family: 'Black Han Sans', sans-serif; font-size: 20px; color: var(--cream); }
+  .sheet-close { width: 30px; height: 30px; border-radius: 50%; background: var(--panel); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 14px; cursor: pointer; color: var(--muted); }
+  .sheet-body { padding: 16px 20px; }
+
+  .sheet-ch-item { padding: 14px 20px; display: flex; align-items: center; gap: 14px; cursor: pointer; border-bottom: 1px solid #1e1e1e; }
+  .sheet-ch-item:last-child { border-bottom: none; }
+  .sheet-ch-item:active { background: #2a1508; }
+  .sheet-ch-item.active-sheet-ch { background: #2a1508; }
+  .sheet-ch-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .sheet-ch-name { font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 900; color: var(--cream); flex: 1; }
+  .sheet-ch-meta { font-size: 12px; color: var(--muted); }
+  .sheet-ch-active-pill { font-family: 'Barlow Condensed', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--orange); background: #2a1508; border: 1px solid #aa4400; padding: 2px 8px; border-radius: 4px; }
+
+  /* New channel form */
+  .form-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .form-input { width: 100%; background: var(--panel); border: 1.5px solid var(--border); border-radius: 12px; padding: 14px 16px; outline: none; font-family: 'Barlow Condensed', sans-serif; font-size: 18px; font-weight: 700; color: var(--cream); margin-bottom: 16px; transition: border-color 0.2s; }
+  .form-input:focus { border-color: var(--orange); }
+  .form-input::placeholder { color: var(--border); }
+
+  /* Toast */
+  .toast { position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-10px); background: var(--orange); color: var(--black); font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; padding: 8px 20px; border-radius: 20px; opacity: 0; pointer-events: none; z-index: 200; transition: opacity 0.2s, transform 0.2s; white-space: nowrap; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* TX bar */
+  .tx-bar { position: fixed; top: 0; left: 0; right: 0; height: 3px; background: var(--orange); transform: scaleX(0); transform-origin: left; transition: transform 0.1s; z-index: 999; }
+  .tx-bar.on { transform: scaleX(1); }
+
+  /* Mic error */
+  .mic-error { background: #2a0808; border: 1px solid #5a1515; border-radius: 10px; padding: 12px 16px; margin: 0 20px 10px; display: flex; align-items: center; gap: 10px; display: none; }
+  .mic-error.show { display: flex; }
+  .mic-error-text { font-size: 13px; color: #ff9999; line-height: 1.4; }
+
+  /* Connection banner */
+  .conn-banner { background: #1a1a08; border-bottom: 1px solid #4a4a00; padding: 6px 20px; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--amber); text-align: center; display: none; flex-shrink: 0; }
+  .conn-banner.show { display: block; }
+
+  /* ── PIN SCREEN ── */
+  #screen-pin { justify-content: center; align-items: center; text-align: center; padding: 0 32px; }
+  .pin-logo { font-family: 'Black Han Sans', sans-serif; font-size: 42px; color: var(--orange); letter-spacing: -1px; margin-bottom: 4px; }
+  .pin-logo span { color: var(--cream); }
+  .pin-sub { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 40px; text-transform: uppercase; }
+  .pin-dots { display: flex; gap: 16px; justify-content: center; margin-bottom: 40px; }
+  .pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); transition: all 0.15s; }
+  .pin-dot.filled { background: var(--orange); border-color: var(--orange); transform: scale(1.1); }
+  .pin-dot.error  { background: var(--red); border-color: var(--red); animation: shake 0.3s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)} }
+  .pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 280px; }
+  .pin-key { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 0; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: background 0.1s, border-color 0.1s; -webkit-tap-highlight-color: transparent; }
+  .pin-key:active { background: #2a1508; border-color: var(--orange); }
+  .pin-key-num { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 700; color: var(--cream); line-height: 1; }
+  .pin-key-alpha { font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 2px; color: var(--muted); margin-top: 2px; }
+  .pin-key.del { background: transparent; border-color: transparent; }
+  .pin-key.del .pin-key-num { color: var(--muted); font-size: 22px; }
+  .pin-forgot { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 1px; color: var(--muted); margin-top: 28px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ── PIN SET SCREEN ── */
+  #screen-setpin { justify-content: center; align-items: center; text-align: center; padding: 0 32px; }
+  .setpin-step-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--orange); margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<!-- TX bar -->
+<div class="tx-bar" id="txBar"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ═══════════════════════════════ ONBOARDING ═══ -->
+<div class="screen active" id="screen-onboarding">
+  <div class="safe-top"></div>
+  <div class="ob-logo-wrap" style="text-align:center;padding:40px 32px 0;">
+    <div class="ob-radio">📡</div>
+    <div class="ob-logo">10<span>-4</span></div>
+    <div class="ob-tagline">Talk like the old days. Works better.</div>
+  </div>
+  <div style="flex:1"></div>
+  <div style="padding:0 32px 40px;">
+    <button class="btn-primary" onclick="goScreen('screen-handle')">Get Started</button>
+    <button class="btn-ghost" onclick="goScreen('screen-handle')">I already have an account</button>
+  </div>
+  <div class="safe-bottom"></div>
+</div>
+
+
+<!-- ═══════════════════════════════ PIN LOCK ═══ -->
+<div class="screen" id="screen-pin">
+  <div class="safe-top"></div>
+  <div class="pin-logo">10<span>-4</span></div>
+  <div class="pin-sub" id="pinLabel">Enter your PIN</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-keypad" id="pinKeypad"></div>
+  <div class="pin-forgot" onclick="pinForgot()">Forgot PIN? Sign out</div>
+  <div class="safe-bottom"></div>
+</div>
+
+<!-- ═══════════════════════════════ SET PIN ═══ -->
+<div class="screen" id="screen-setpin">
+  <div class="safe-top"></div>
+  <div class="pin-logo">10<span>-4</span></div>
+  <div class="setpin-step-label" id="setPinStepLabel">Step 3 of 3</div>
+  <div class="pin-sub" id="setPinLabel">Create a 4-digit PIN</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="spd0"></div>
+    <div class="pin-dot" id="spd1"></div>
+    <div class="pin-dot" id="spd2"></div>
+    <div class="pin-dot" id="spd3"></div>
+  </div>
+  <div class="pin-keypad" id="setPinKeypad"></div>
+  <div class="safe-bottom"></div>
+</div>
+
+<!-- ═══════════════════════════════ HANDLE ═══ -->
+<div class="screen" id="screen-handle">
+  <div class="safe-top"></div>
+  <div class="status-bar"><span class="status-time" id="st2"></span></div>
+  <div style="padding:0 28px;flex:1;display:flex;flex-direction:column;">
+    <div style="padding-top:12px;">
+      <div class="eyebrow">Step 1 of 2</div>
+      <div class="big-heading">Pick your handle</div>
+      <div class="sub" style="margin-bottom:24px;">Your call sign on every channel.</div>
+    </div>
+    <div class="handle-preview-card" id="handleCard">
+      <div class="hav" id="handleAv">?</div>
+      <div>
+        <div class="hav-name" id="handlePreview">Your handle</div>
+        <div class="hav-sub">On 10-4</div>
+      </div>
+    </div>
+    <div class="input-row">
+      <span class="input-label">@</span>
+      <input type="text" placeholder="BreakerMike" maxlength="18" id="handleInput" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" oninput="onHandleInput(this)" />
+    </div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:24px;">Letters, numbers, dashes. 3–18 chars.</div>
+    <div style="flex:1"></div>
+    <button class="btn-primary" id="handleBtn" onclick="goScreen('screen-mode')" disabled>Looks good →</button>
+  </div>
+  <div class="safe-bottom"></div>
+</div>
+
+<!-- ═══════════════════════════════ MODE ═══ -->
+<div class="screen" id="screen-mode">
+  <div class="safe-top"></div>
+  <div class="status-bar"><span class="status-time" id="st3"></span></div>
+  <div style="padding:0 24px;flex:1;display:flex;flex-direction:column;">
+    <div style="padding-top:12px;">
+      <div class="eyebrow">Step 2 of 2</div>
+      <div class="big-heading">How will you use it?</div>
+    </div>
+    <div style="flex:1;display:flex;flex-direction:column;gap:12px;padding:16px 0;">
+      <div class="mode-card work" id="modeWork" onclick="selectMode('work')">
+        <div class="mode-check" id="modeWorkCheck"></div>
+        <div class="mode-card-icon">⚙️</div>
+        <div class="mode-badge-label">Work</div>
+        <div class="mode-title">Shift Mode</div>
+        <div class="mode-desc">Worksites, warehouses, events. Noise cancellation, battery saver, geofencing.</div>
+      </div>
+      <div class="mode-card fun" id="modeFun" onclick="selectMode('fun')">
+        <div class="mode-check" id="modeFunCheck"></div>
+        <div class="mode-card-icon">🎉</div>
+        <div class="mode-badge-label">Social</div>
+        <div class="mode-title">Fun Mode</div>
+        <div class="mode-desc">Friends, road trips, hiking. Voice changers, sound effects, party channels.</div>
+      </div>
+    </div>
+    <button class="btn-primary" id="modeBtn" onclick="finishOnboarding()" disabled>Let's go →</button>
+  </div>
+  <div class="safe-bottom"></div>
+</div>
+
+<!-- ═══════════════════════════════ RADIO ═══ -->
+<div class="screen" id="screen-radio">
+  <div class="safe-top"></div>
+  <div class="status-bar">
+    <span class="status-time" id="st-radio"></span>
+    <div class="status-right">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connLabel" style="font-size:11px;">Connecting…</span>
+      <span>⚡ 78%</span>
+    </div>
+  </div>
+  <div class="conn-banner" id="connBanner">No connection — messages will send when back online</div>
+  <div class="app-header">
+    <div class="logo">10<span>-4</span></div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;color:var(--muted);" id="headerHandle">@—</span>
+      <div class="mode-pill work" id="modePill" onclick="toggleModePill()">⚙ SHIFT</div>
+    </div>
+  </div>
+  <div class="ch-strip">
+    <div>
+      <div class="ch-label">Active Channel</div>
+      <div class="ch-name-row">
+        <div class="live-dot"></div>
+        <div class="ch-name-text" id="activeCh">—</div>
+      </div>
+      <div class="ch-meta" id="activeChMeta">Not joined</div>
+    </div>
+    <div class="ch-switch-btn" onclick="openChModal()">≡ CH</div>
+  </div>
+  <div class="wave-wrap" id="waveform"></div>
+  <div class="talking-banner" id="talkingBanner">
+    <div class="talking-av" id="talkingAv"></div>
+    <div class="talking-text" id="talkingText"></div>
+  </div>
+  <div class="mic-error" id="micError">
+    <span style="font-size:20px;">🎙️</span>
+    <div class="mic-error-text">Mic access denied. Open Settings → Safari/Chrome → allow microphone for this site.</div>
+  </div>
+  <div class="msg-area" id="msgArea">
+    <div class="msg-section-label">Recent</div>
+    <div class="msg-empty" id="msgEmpty">No messages yet — hold the button to talk</div>
+  </div>
+  <div class="ptt-section">
+    <div class="grille">
+      <div class="grille-line"></div>
+      <div class="grille-text">PUSH TO TALK</div>
+      <div class="grille-line"></div>
+    </div>
+    <div class="ptt-wrap">
+      <div class="ptt-ring" id="pttRing"></div>
+      <div class="ptt-btn" id="pttBtn">
+        <div class="ptt-icon">📡</div>
+        <div class="ptt-label" id="pttLabel">HOLD</div>
+      </div>
+    </div>
+    <div class="ptt-hint" id="pttHint">Hold to talk · Release to send</div>
+  </div>
+  <div class="util-row">
+    <div class="util-btn" onclick="triggerSOS()">
+      <div class="util-circle sos-circle" style="font-family:'Black Han Sans',sans-serif;font-size:12px;color:var(--red);">SOS</div>
+      <div class="util-tag sos-tag">Emergency</div>
+    </div>
+    <div class="util-btn" onclick="toggleMute()">
+      <div class="util-circle" id="muteBtn">🎙️</div>
+      <div class="util-tag">Mute</div>
+    </div>
+    <div class="util-btn" onclick="toggleSpeaker()">
+      <div class="util-circle" id="speakerBtn">🔊</div>
+      <div class="util-tag">Speaker</div>
+    </div>
+    <div class="util-btn" onclick="shareLocation()">
+      <div class="util-circle" id="locationBtn">📍</div>
+      <div class="util-tag">Location</div>
+    </div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="goScreen('screen-radio')"><div class="nav-icon">📻</div><div class="nav-lbl">Radio</div></div>
+    <div class="nav-item" onclick="goScreen('screen-channels')"><div class="nav-icon">📢</div><div class="nav-lbl">Channels</div></div>
+    <div class="nav-item"><div class="nav-icon">🕘</div><div class="nav-lbl">History</div></div>
+    <div class="nav-item" onclick="goScreen('screen-profile')"><div class="nav-icon">👤</div><div class="nav-lbl">Profile</div></div>
+  </div>
+  <div class="safe-bottom"></div>
+</div>
+
+<!-- ═══════════════════════════════ CHANNELS ═══ -->
+<div class="screen" id="screen-channels">
+  <div class="safe-top"></div>
+  <div class="status-bar"><span class="status-time" id="st-ch"></span><span style="color:var(--cream);font-size:12px;font-weight:600;">⚡ 78%</span></div>
+  <div class="app-header">
+    <div class="logo">10<span>-4</span></div>
+    <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:600;color:var(--muted);" id="chHeaderHandle">@—</div>
+  </div>
+  <div class="ch-list-scroll" id="chListScroll">
+    <div class="ch-list-label">My Channels</div>
+    <div id="chListEl"></div>
+    <div class="ch-list-label">Available</div>
+    <div id="chDiscoverEl"></div>
+  </div>
+  <button class="new-ch-fab" onclick="openNewChModal()">＋</button>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goScreen('screen-radio')"><div class="nav-icon">📻</div><div class="nav-lbl">Radio</div></div>
+    <div class="nav-item active" onclick="goScreen('screen-channels')"><div class="nav-icon">📢</div><div class="nav-lbl">Channels</div></div>
+    <div class="nav-item"><div class="nav-icon">🕘</div><div class="nav-lbl">History</div></div>
+    <div class="nav-item" onclick="goScreen('screen-profile')"><div class="nav-icon">👤</div><div class="nav-lbl">Profile</div></div>
+  </div>
+  <div class="safe-bottom"></div>
+</div>
+
+<!-- ═══════════════════════════════ PROFILE ═══ -->
+<div class="screen" id="screen-profile">
+  <div class="safe-top"></div>
+  <div class="status-bar"><span class="status-time" id="st-pf"></span><span style="color:var(--cream);font-size:12px;font-weight:600;">⚡ 78%</span></div>
+  <div class="app-header"><div class="logo">10<span>-4</span></div><div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;color:var(--muted);">Settings</div></div>
+  <div class="profile-scroll">
+    <div class="pf-section-label" style="padding-top:8px;">Profile</div>
+    <div class="profile-hero-card">
+      <div class="profile-av" id="pfAv">BM</div>
+      <div class="profile-info">
+        <div class="profile-handle" id="pfHandle"><span>@</span>BreakerMike</div>
+        <div class="profile-since">On 10-4 since today</div>
+        <div class="status-pills">
+          <div class="status-pill shift active" id="pf-shift" onclick="setStatus('shift')">⚙ On Shift</div>
+          <div class="status-pill online" id="pf-online" onclick="setStatus('online')">● Online</div>
+          <div class="status-pill dnd" id="pf-dnd" onclick="setStatus('dnd')">🔕 DND</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pf-section-label">Audio</div>
+    <div class="setting-group">
+      <div class="setting-item">
+        <div class="s-icon" style="background:#1a2a1a">🎙️</div>
+        <div class="s-body"><div class="s-name">Noise Cancellation</div><div class="s-desc" id="ncDesc">High — aggressive</div></div>
+        <div class="s-right">
+          <select id="ncSelect" onchange="setNC(this.value)" style="background:var(--panel2);border:1px solid var(--border);color:var(--cream);border-radius:6px;padding:4px 8px;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;outline:none;cursor:pointer;">
+            <option value="high" selected>High</option>
+            <option value="medium">Medium</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+      </div>
+      <div class="setting-item">
+        <div class="s-icon" style="background:#2a1a0a">📳</div>
+        <div class="s-body"><div class="s-name">Haptic Feedback</div><div class="s-desc">Vibrate on PTT</div></div>
+        <div class="s-right"><div class="toggle on" id="hapticToggle" onclick="this.classList.toggle('on')"><div class="toggle-k"></div></div></div>
+      </div>
+      <div class="setting-item">
+        <div class="s-icon" style="background:#1a1a2a">🔵</div>
+        <div class="s-body"><div class="s-name">Bluetooth PTT</div><div class="s-desc" id="btDesc">No device paired</div></div>
+        <div class="s-right"><div class="s-val" style="color:var(--orange);cursor:pointer;" onclick="pairBT()">Pair</div><div class="s-arrow">›</div></div>
+      </div>
+    </div>
+
+    <div class="pf-section-label">Connection</div>
+    <div class="setting-group">
+      <div class="setting-item">
+        <div class="s-icon" style="background:#1a2a2a">🌐</div>
+        <div class="s-body"><div class="s-name">Server</div><div class="s-desc" id="serverDesc">Connecting…</div></div>
+        <div class="s-right"><div class="conn-dot" id="pfConnDot"></div></div>
+      </div>
+      <div class="setting-item">
+        <div class="s-icon" style="background:#1a2a1a">💾</div>
+        <div class="s-body"><div class="s-name">Data Saver</div><div class="s-desc">Compress audio on cellular</div></div>
+        <div class="s-right"><div class="toggle" id="dataSaverToggle" onclick="this.classList.toggle('on')"><div class="toggle-k"></div></div></div>
+      </div>
+    </div>
+
+    <div class="pf-section-label">Account</div>
+    <div class="setting-group">
+      <div class="danger-item" onclick="signOut()">
+        <div class="s-icon" style="background:#2a0808;font-size:17px;">🚪</div>
+        <div class="danger-name">Sign Out</div>
+      </div>
+    </div>
+    <div style="height:20px;"></div>
+  </div>
+  <div class="bottom-nav">
+    <div class="nav-item" onclick="goScreen('screen-radio')"><div class="nav-icon">📻</div><div class="nav-lbl">Radio</div></div>
+    <div class="nav-item" onclick="goScreen('screen-channels')"><div class="nav-icon">📢</div><div class="nav-lbl">Channels</div></div>
+    <div class="nav-item"><div class="nav-icon">🕘</div><div class="nav-lbl">History</div></div>
+    <div class="nav-item active" onclick="goScreen('screen-profile')"><div class="nav-icon">👤</div><div class="nav-lbl">Profile</div></div>
+  </div>
+  <div class="safe-bottom"></div>
+</div>
+
+<!-- ══ CHANNEL SWITCH MODAL ══ -->
+<div class="modal-bg" id="chModal" onclick="if(event.target===this)closeChModal()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">Switch Channel</div><div class="sheet-close" onclick="closeChModal()">✕</div></div>
+    <div id="chModalList"></div>
+  </div>
+</div>
+
+<!-- ══ NEW CHANNEL MODAL ══ -->
+<div class="modal-bg" id="newChModal" onclick="if(event.target===this)closeNewChModal()">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-header"><div class="sheet-title">New Channel</div><div class="sheet-close" onclick="closeNewChModal()">✕</div></div>
+    <div class="sheet-body">
+      <div class="form-label">Channel Name</div>
+      <input class="form-input" id="newChNameInput" placeholder="e.g. Night Crew" autocomplete="off" />
+      <div class="form-label">Type</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <div id="typeWork" onclick="setChType('work')" style="flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--green);background:#1a2a1a;text-align:center;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--green);letter-spacing:1px;">⚙ WORK</div>
+        <div id="typeFun"  onclick="setChType('fun')"  style="flex:1;padding:12px;border-radius:10px;border:1.5px solid var(--border);background:var(--panel);text-align:center;cursor:pointer;font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:1px;">🎉 SOCIAL</div>
+      </div>
+      <button class="btn-primary" onclick="createChannel()">Create Channel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Load Socket.io — from server if available, CDN as fallback
+(function() {
+  var s = document.createElement('script');
+  s.src = '/socket.io/socket.io.js';
+  s.onerror = function() {
+    var fb = document.createElement('script');
+    fb.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+    document.head.appendChild(fb);
+  };
+  document.head.appendChild(s);
+})();
+</script>
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════
+// CONFIG — update SERVER_URL after deploying
+// ═══════════════════════════════════════════════
+const SERVER_URL = window.location.origin; // same origin when served from server
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let state = {
+  handle:       '',
+  mode:         'work',
+  status:       'shift',
+  activeChId:   null,
+  activeChName: '',
+  channels:     [],   // { id, name, members, talking }
+  messages:     {},   // channelId -> [msg]
+  muted:        false,
+  speakerOn:    true,
+  isTalking:    false,
+  otherTalking: false,
+  stream:       null,
+  mediaRec:     null,
+  audioChunks:  [],
+  audioCtx:     null,
+  analyser:     null,
+  connected:    false,
+  newChType:    'work',
+};
+
+// ═══════════════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════════════
+function tick() {
+  const t = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  document.querySelectorAll('[id^="st"]').forEach(el => el.textContent = t);
+}
+tick(); setInterval(tick, 10000);
+
+// ═══════════════════════════════════════════════
+// SCREEN NAVIGATION
+// ═══════════════════════════════════════════════
+let currentScreen = 'screen-onboarding';
+function goScreen(id) {
+  const prev = document.getElementById(currentScreen);
+  const next = document.getElementById(id);
+  if (!next || id === currentScreen) return;
+  prev.classList.add('prev');
+  next.classList.add('active');
+  setTimeout(() => prev.classList.remove('active','prev'), 400);
+  currentScreen = id;
+  // Update bottom nav active states
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const navMap = { 'screen-radio':'0', 'screen-channels':'1', 'screen-profile':'3' };
+  if (navMap[id]) {
+    document.querySelectorAll(`#${id} .nav-item`)[parseInt(navMap[id])]?.classList.add('active');
+  }
+  if (id === 'screen-channels') renderChLists();
+}
+
+// ═══════════════════════════════════════════════
+// ONBOARDING
+// ═══════════════════════════════════════════════
+function onHandleInput(input) {
+  const v = input.value.replace(/[^a-zA-Z0-9\-]/g,'');
+  input.value = v;
+  const valid = v.length >= 3;
+  document.getElementById('handleBtn').disabled = !valid;
+  const av = document.getElementById('handleAv');
+  const prev = document.getElementById('handlePreview');
+  const card = document.getElementById('handleCard');
+  if (valid) {
+    av.textContent = v.slice(0,2).toUpperCase();
+    prev.textContent = v; prev.classList.add('set');
+    card.classList.add('valid');
+  } else {
+    av.textContent = '?';
+    prev.textContent = 'Your handle'; prev.classList.remove('set');
+    card.classList.remove('valid');
+  }
+}
+
+let selectedMode = null;
+function selectMode(m) {
+  selectedMode = m;
+  document.getElementById('modeWork').className = 'mode-card work' + (m==='work'?' selected':'');
+  document.getElementById('modeFun').className  = 'mode-card fun'  + (m==='fun'?' selected':'');
+  document.getElementById('modeWorkCheck').textContent = m==='work'?'✓':'';
+  document.getElementById('modeFunCheck').textContent  = m==='fun'?'✓':'';
+  document.getElementById('modeBtn').disabled = false;
+}
+
+function finishOnboarding() {
+  state.handle = document.getElementById('handleInput').value.trim();
+  state.mode   = selectedMode;
+  localStorage.setItem('10-4-handle', state.handle);
+  localStorage.setItem('10-4-mode',   state.mode);
+  // Go to PIN setup before launching app
+  setPinMode = 'create';
+  setPinEntry = '';
+  setPinFirst = '';
+  document.getElementById('setPinStepLabel').textContent = 'Step 3 of 3';
+  document.getElementById('setPinLabel').textContent = 'Create a 4-digit PIN';
+  renderSetPinDots();
+  goScreen('screen-setpin');
+}
+
+function addDefaultChannels() {
+  const work = [{id:'site-crew',name:'Site Crew',icon:'🏗️',color:'#FF6B1A'},{id:'safety',name:'Safety',icon:'⚠️',color:'#E03030'},{id:'logistics',name:'Logistics',icon:'🚚',color:'#FFB347'}];
+  const fun  = [{id:'road-trip',name:'Road Trip',icon:'🚗',color:'#CC88FF'},{id:'squad',name:'Squad',icon:'👥',color:'#4A9EFF'},{id:'banter',name:'Banter',icon:'🎉',color:'#3DB87A'}];
+  const chs  = state.mode==='fun'?fun:work;
+  state.channels = chs.map(c=>({...c,members:0,talking:null,joined:false}));
+  // Auto-join first channel
+  joinChannel(state.channels[0]);
+}
+
+// ═══════════════════════════════════════════════
+// SOCKET.IO
+// ═══════════════════════════════════════════════
+let socket;
+function initSocket() {
+  if (typeof io === "undefined") { console.warn("Socket.io not loaded yet, retrying..."); setTimeout(initSocket, 500); return; }
+  socket = io(SERVER_URL, { transports: ['websocket','polling'] });
+
+  socket.on('connect', () => {
+    state.connected = true;
+    setConnUI(true);
+    socket.emit('register', { handle: state.handle, status: state.status, avatar: state.handle.slice(0,2).toUpperCase() });
+    // Re-join active channel
+    if (state.activeChId) {
+      socket.emit('join_channel', { channelId: state.activeChId, channelName: state.activeChName });
+    }
+  });
+
+  socket.on('disconnect', () => { state.connected = false; setConnUI(false); });
+
+  socket.on('registered', ({ id }) => {
+    console.log('Registered as', state.handle, id);
+    if (state.activeChId) socket.emit('join_channel', { channelId: state.activeChId, channelName: state.activeChName });
+  });
+
+  socket.on('channel_joined', (chInfo) => {
+    updateChFromServer(chInfo);
+    showToast('Joined #' + chInfo.name);
+  });
+
+  socket.on('channel_update', (chInfo) => updateChFromServer(chInfo));
+
+  socket.on('user_joined', ({ channelId, user }) => {
+    if (channelId !== state.activeChId) return;
+    updateActiveChMeta();
+  });
+
+  socket.on('user_left', ({ channelId, handle }) => {
+    if (channelId !== state.activeChId) return;
+    updateActiveChMeta();
+  });
+
+  socket.on('ptt_started', ({ channelId, userId, handle }) => {
+    if (channelId !== state.activeChId) return;
+    if (userId === socket.id) return; // our own echo
+    state.otherTalking = true;
+    showTalkingBanner(handle);
+    setWaveActive(true);
+  });
+
+  socket.on('ptt_denied', ({ reason, talker }) => {
+    showToast(talker + ' is talking…');
+    state.isTalking = false;
+    pttStop();
+  });
+
+  socket.on('audio_chunk', ({ userId, chunk }) => {
+    if (userId === socket?.id) return;
+    if (!state.speakerOn) return;
+    playAudioChunk(chunk);
+  });
+
+  socket.on('ptt_stopped', ({ channelId, message }) => {
+    if (channelId !== state.activeChId) return;
+    state.otherTalking = false;
+    hideTalkingBanner();
+    setWaveActive(false);
+    addMessage(message);
+    playClickSound('receive');
+  });
+
+  socket.on('user_status', ({ userId, handle, status }) => {});
+
+  socket.on('channels_list', (list) => {
+    list.forEach(ch => {
+      const existing = state.channels.find(c=>c.id===ch.id);
+      if (existing) { existing.members = ch.members; existing.talking = ch.talking; }
+    });
+    renderChLists();
+  });
+
+  socket.on('error', (msg) => showToast(msg));
+}
+
+function setConnUI(online) {
+  document.querySelectorAll('.conn-dot').forEach(d => d.classList.toggle('online', online));
+  document.getElementById('connLabel').textContent = online ? 'Live' : 'Offline';
+  document.getElementById('connBanner').classList.toggle('show', !online);
+  const serverDesc = document.getElementById('serverDesc');
+  if (serverDesc) serverDesc.textContent = online ? SERVER_URL + ' · Connected' : 'Disconnected';
+}
+
+function updateChFromServer(chInfo) {
+  if (chInfo.id === state.activeChId) {
+    state.activeChName = chInfo.name;
+    updateActiveChMeta(chInfo.members.length);
+    if (chInfo.history) {
+      state.messages[chInfo.id] = chInfo.history;
+      renderMessages();
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// MIC + AUDIO
+// ═══════════════════════════════════════════════
+async function initMic() {
+  try {
+    const constraints = { audio: { echoCancellation: true, noiseSuppression: state.mode==='work', autoGainControl: true } };
+    state.stream = await navigator.mediaDevices.getUserMedia(constraints);
+    document.getElementById('micError').classList.remove('show');
+
+    // Set up analyser for waveform
+    state.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const src = state.audioCtx.createMediaStreamSource(state.stream);
+    state.analyser = state.audioCtx.createAnalyser();
+    state.analyser.fftSize = 64;
+    src.connect(state.analyser);
+    animateWave();
+  } catch (e) {
+    console.warn('Mic error:', e);
+    document.getElementById('micError').classList.add('show');
+  }
+}
+
+// Waveform
+const NUM_BARS = 36;
+const waveformEl = document.getElementById('waveform');
+let waveBars = [];
+for (let i = 0; i < NUM_BARS; i++) {
+  const b = document.createElement('div'); b.className = 'wbar';
+  waveformEl.appendChild(b); waveBars.push(b);
+}
+let waveForced = false;
+
+function animateWave() {
+  requestAnimationFrame(animateWave);
+  const isActive = state.isTalking || state.otherTalking || waveForced;
+  if (state.analyser && state.isTalking) {
+    const buf = new Uint8Array(state.analyser.frequencyBinCount);
+    state.analyser.getByteFrequencyData(buf);
+    waveBars.forEach((b, i) => {
+      const val = buf[i % buf.length] || 0;
+      const h = state.isTalking ? 4 + (val / 255) * 48 : 4 + Math.abs(Math.sin(Date.now()/400+i*0.5)*4);
+      b.style.height = h + 'px';
+      b.classList.toggle('on', isActive);
+    });
+  } else {
+    waveBars.forEach((b, i) => {
+      const phase = Date.now() / 200 + i * 0.5;
+      const h = isActive ? 6 + Math.abs(Math.sin(phase)*30) : 4 + Math.abs(Math.sin(phase*0.3+i*0.2)*3);
+      b.style.height = h + 'px';
+      b.classList.toggle('on', isActive);
+    });
+  }
+}
+function setWaveActive(on) { waveForced = on; }
+
+// PTT recording
+function pttStart() {
+  if (!state.activeChId) { showToast('Join a channel first'); return; }
+  if (state.muted) { showToast('Unmute first'); return; }
+  if (state.otherTalking) { showToast('Channel busy'); return; }
+  if (state.isTalking) return;
+  state.isTalking = true;
+
+  // Resume audio context (Safari needs user gesture)
+  if (state.audioCtx?.state === 'suspended') state.audioCtx.resume();
+
+  // Visual
+  document.getElementById('pttBtn').classList.add('active');
+  document.getElementById('pttLabel').textContent = 'TX';
+  document.getElementById('pttHint').textContent = 'Transmitting…';
+  document.getElementById('pttHint').classList.add('talking');
+  document.getElementById('txBar').classList.add('on');
+  playClickSound('start');
+  if (navigator.vibrate) navigator.vibrate(40);
+
+  // Signal server
+  if (socket?.connected) socket.emit('ptt_start', { channelId: state.activeChId });
+
+  // Start recording
+  if (state.stream) {
+    state.audioChunks = [];
+    try {
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/mp4';
+      state.mediaRec = new MediaRecorder(state.stream, { mimeType });
+      state.mediaRec.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          state.audioChunks.push(e.data);
+          // Stream chunk to server
+          if (socket?.connected) {
+            const reader = new FileReader();
+            reader.onload = () => socket.emit('audio_chunk', { channelId: state.activeChId, chunk: reader.result });
+            reader.readAsDataURL(e.data);
+          }
+        }
+      };
+      state.mediaRec.start(200); // 200ms chunks for low latency
+    } catch (err) {
+      console.warn('MediaRecorder error:', err);
+    }
+  }
+}
+
+function pttStop() {
+  if (!state.isTalking) return;
+  state.isTalking = false;
+
+  // Visual
+  document.getElementById('pttBtn').classList.remove('active');
+  document.getElementById('pttLabel').textContent = 'HOLD';
+  document.getElementById('pttHint').textContent = 'Hold to talk · Release to send';
+  document.getElementById('pttHint').classList.remove('talking');
+  document.getElementById('txBar').classList.remove('on');
+  playClickSound('stop');
+
+  // Stop recording
+  let duration = 0;
+  if (state.mediaRec && state.mediaRec.state !== 'inactive') {
+    state.mediaRec.onstop = () => {
+      // Save locally
+      const blob = new Blob(state.audioChunks, { type: state.mediaRec.mimeType });
+      const url  = URL.createObjectURL(blob);
+      const msgId = `local-${Date.now()}`;
+      const dur  = duration;
+      state.mediaRec._endTime = Date.now();
+      const localMsg = {
+        id: msgId, userId: 'me', handle: state.handle,
+        duration: Math.round((state.mediaRec._endTime - (state.mediaRec._startTime||state.mediaRec._endTime))/1000),
+        timestamp: Date.now(), audioUrl: url, isLocal: true,
+      };
+      if (!state.messages[state.activeChId]) state.messages[state.activeChId] = [];
+      state.messages[state.activeChId].push(localMsg);
+      renderMessages();
+      showToast('SENT ✓', 'var(--green)');
+    };
+    state.mediaRec._startTime = state.mediaRec._startTime || Date.now();
+    duration = Math.round((Date.now() - state.mediaRec._startTime) / 1000);
+    state.mediaRec.stop();
+  }
+
+  // Signal server
+  if (socket?.connected) {
+    socket.emit('ptt_stop', { channelId: state.activeChId, duration, messageId: `${socket.id}-${Date.now()}` });
+  }
+}
+
+// Receive audio
+function playAudioChunk(dataUrl) {
+  if (!dataUrl) return;
+  const audio = new Audio(dataUrl);
+  audio.play().catch(()=>{});
+}
+
+// Play back a local recording
+let currentAudio = null;
+function playMessage(msg) {
+  if (!msg.audioUrl) { showToast('Audio not available'); return; }
+  if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+  currentAudio = new Audio(msg.audioUrl);
+  currentAudio.play().catch(e => showToast('Tap to enable audio'));
+  // Update playing state
+  document.querySelectorAll('.msg-item').forEach(el => el.classList.remove('playing'));
+  const el = document.getElementById('msg-' + msg.id);
+  if (el) {
+    el.classList.add('playing');
+    currentAudio.onended = () => el.classList.remove('playing');
+  }
+}
+
+// Click sounds via Web Audio API
+function playClickSound(type) {
+  try {
+    const ctx = state.audioCtx || new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if (type === 'start') {
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      osc.start(); osc.stop(ctx.currentTime + 0.1);
+    } else if (type === 'stop') {
+      osc.frequency.setValueAtTime(440, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(220, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+      osc.start(); osc.stop(ctx.currentTime + 0.12);
+    } else if (type === 'receive') {
+      osc.frequency.setValueAtTime(660, ctx.currentTime);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+      osc.start(); osc.stop(ctx.currentTime + 0.08);
+    }
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════
+// PTT BUTTON EVENTS (touch + mouse)
+// ═══════════════════════════════════════════════
+const pttBtn = document.getElementById('pttBtn');
+pttBtn.addEventListener('mousedown',  (e) => { e.preventDefault(); pttStart(); });
+pttBtn.addEventListener('touchstart', (e) => { e.preventDefault(); pttStart(); }, { passive: false });
+pttBtn.addEventListener('mouseup',    pttStop);
+pttBtn.addEventListener('touchend',   pttStop);
+pttBtn.addEventListener('mouseleave', () => { if (state.isTalking) pttStop(); });
+pttBtn.addEventListener('contextmenu', e => e.preventDefault());
+
+// ═══════════════════════════════════════════════
+// CHANNELS
+// ═══════════════════════════════════════════════
+const CH_ICONS = ['🏗️','⚠️','🚚','🎉','📦','🎤','🚗','📻','⚡','🌐'];
+const CH_COLORS = ['#FF6B1A','#E03030','#FFB347','#4A9EFF','#3DB87A','#CC88FF'];
+
+function joinChannel(ch) {
+  // Leave previous
+  if (state.activeChId && socket?.connected) {
+    socket.emit('leave_channel', { channelId: state.activeChId });
+  }
+  state.activeChId   = ch.id;
+  state.activeChName = ch.name;
+  state.messages[ch.id] = state.messages[ch.id] || [];
+  ch.joined = true;
+
+  document.getElementById('activeCh').textContent   = ch.name;
+  document.getElementById('activeChMeta').textContent = '0 members';
+  document.getElementById('headerHandle').textContent = '@' + state.handle;
+  updateActiveChMeta();
+  renderMessages();
+
+  if (socket?.connected) {
+    socket.emit('join_channel', { channelId: ch.id, channelName: ch.name });
+  }
+
+  localStorage.setItem('10-4-activeChId',   ch.id);
+  localStorage.setItem('10-4-activeChName', ch.name);
+}
+
+function updateActiveChMeta(count) {
+  const meta = document.getElementById('activeChMeta');
+  if (count !== undefined) meta.textContent = count + ' member' + (count===1?'':'s') + ' · Live';
+}
+
+function openChModal() {
+  const list = document.getElementById('chModalList');
+  list.innerHTML = '';
+  state.channels.forEach(ch => {
+    const item = document.createElement('div');
+    item.className = 'sheet-ch-item' + (ch.id===state.activeChId?' active-sheet-ch':'');
+    item.innerHTML = `
+      <div class="sheet-ch-dot" style="background:${ch.color||'var(--orange)'}"></div>
+      <div class="sheet-ch-name">${ch.name}</div>
+      <div class="sheet-ch-meta">${ch.members} online</div>
+      ${ch.id===state.activeChId?'<div class="sheet-ch-active-pill">ACTIVE</div>':''}
+    `;
+    item.onclick = () => { joinChannel(ch); closeChModal(); goScreen('screen-radio'); };
+    list.appendChild(item);
+  });
+  document.getElementById('chModal').classList.add('open');
+}
+function closeChModal() { document.getElementById('chModal').classList.remove('open'); }
+
+function renderChLists() {
+  const myEl   = document.getElementById('chListEl');
+  const discEl = document.getElementById('chDiscoverEl');
+  myEl.innerHTML=''; discEl.innerHTML='';
+  const joined = state.channels.filter(c=>c.joined);
+  const avail  = state.channels.filter(c=>!c.joined);
+  joined.forEach(ch => myEl.appendChild(makeChCard(ch, true)));
+  avail.forEach(ch  => discEl.appendChild(makeChCard(ch, false)));
+  document.getElementById('chHeaderHandle').textContent = '@' + state.handle;
+}
+
+function makeChCard(ch, joined) {
+  const el = document.createElement('div');
+  el.className = 'ch-list-item' + (ch.id===state.activeChId?' current-ch':'');
+  el.innerHTML = `
+    <div class="ch-icon" style="background:${hexBg(ch.color)}">${ch.icon||'📻'}</div>
+    <div class="ch-list-body">
+      <div class="ch-list-name">${ch.name}</div>
+      <div class="ch-list-meta">${ch.members} online${ch.talking?' · 🔴 '+ch.talking+' talking':''}</div>
+    </div>
+    <div class="ch-list-right">
+      ${ch.talking?'<div class="badge-live">● LIVE</div>':''}
+      <div class="ch-member-count">${ch.members} members</div>
+    </div>
+  `;
+  el.onclick = () => { joinChannel(ch); goScreen('screen-radio'); };
+  return el;
+}
+
+function hexBg(hex) {
+  // Dim the color for bg
+  return hex ? hex + '22' : '#2a1508';
+}
+
+function openNewChModal() {
+  document.getElementById('newChNameInput').value = '';
+  state.newChType = 'work';
+  updateChTypeUI();
+  document.getElementById('newChModal').classList.add('open');
+}
+function closeNewChModal() { document.getElementById('newChModal').classList.remove('open'); }
+function setChType(t) { state.newChType = t; updateChTypeUI(); }
+function updateChTypeUI() {
+  const w = document.getElementById('typeWork'), f = document.getElementById('typeFun');
+  if (state.newChType==='work') {
+    w.style.borderColor='var(--green)'; w.style.background='#1a2a1a'; w.style.color='var(--green)';
+    f.style.borderColor='var(--border)'; f.style.background='var(--panel)'; f.style.color='var(--muted)';
+  } else {
+    f.style.borderColor='var(--purple)'; f.style.background='#2a1a3a'; f.style.color='var(--purple)';
+    w.style.borderColor='var(--border)'; w.style.background='var(--panel)'; w.style.color='var(--muted)';
+  }
+}
+
+function createChannel() {
+  const name = document.getElementById('newChNameInput').value.trim();
+  if (!name) { document.getElementById('newChNameInput').focus(); return; }
+  const id = name.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-]/g,'') + '-' + Date.now();
+  const colors = CH_COLORS;
+  const ch = {
+    id, name,
+    icon: state.newChType==='work' ? '🔧' : '🎉',
+    color: colors[state.channels.length % colors.length],
+    members: 0, talking: null, joined: true,
+  };
+  state.channels.push(ch);
+  closeNewChModal();
+  joinChannel(ch);
+  showToast('#' + name + ' created');
+  goScreen('screen-radio');
+}
+
+// ═══════════════════════════════════════════════
+// MESSAGES
+// ═══════════════════════════════════════════════
+function addMessage(msg) {
+  if (!state.messages[state.activeChId]) state.messages[state.activeChId] = [];
+  // Avoid duplicate if we already added locally
+  if (!state.messages[state.activeChId].find(m => m.id===msg.id)) {
+    state.messages[state.activeChId].push(msg);
+  }
+  renderMessages();
+}
+
+function renderMessages() {
+  const area = document.getElementById('msgArea');
+  const empty = document.getElementById('msgEmpty');
+  const msgs = state.messages[state.activeChId] || [];
+  // Remove old message items
+  area.querySelectorAll('.msg-item').forEach(el => el.remove());
+  empty.style.display = msgs.length ? 'none' : 'block';
+  // Render last 20
+  const recent = msgs.slice(-20);
+  recent.forEach(msg => {
+    const el = document.createElement('div');
+    el.className = 'msg-item'; el.id = 'msg-' + msg.id;
+    const av = (msg.handle||'?').slice(0,2).toUpperCase();
+    const timeStr = new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    const isMe = msg.handle === state.handle;
+    const avStyle = isMe ? 'background:#2a1508;border:1.5px solid var(--orange);' : 'background:#1a2a3a;';
+    if (msg.isLocation) {
+      el.style.borderColor = '#3a6a3a';
+      el.innerHTML = `<div class="msg-av" style="${avStyle}">📍</div><div class="msg-body"><div class="msg-handle">${isMe?'You':msg.handle} dropped a pin</div><div class="msg-meta">${timeStr} · Tap to open map</div></div><div class="msg-play" style="background:#1a3a1a;font-size:14px;">🗺️</div>`;
+      el.onclick = () => window.open(msg.mapsUrl, '_blank');
+    } else {
+      const durStr = msg.duration ? `0:${String(msg.duration).padStart(2,'0')}` : '';
+      el.innerHTML = `<div class="msg-av" style="${avStyle}">${av}</div><div class="msg-body"><div class="msg-handle">${isMe?'You':msg.handle}</div><div class="msg-meta">${timeStr}${durStr?' · '+durStr:''}</div></div><div class="msg-play">▶</div>`;
+      el.onclick = () => playMessage(msg);
+    }
+    area.appendChild(el);
+  });
+  // Scroll to bottom
+  area.scrollTop = area.scrollHeight;
+}
+
+// ═══════════════════════════════════════════════
+// TALKING BANNER
+// ═══════════════════════════════════════════════
+function showTalkingBanner(handle) {
+  document.getElementById('talkingAv').textContent   = handle.slice(0,2).toUpperCase();
+  document.getElementById('talkingText').textContent = handle + ' is talking…';
+  document.getElementById('talkingBanner').classList.add('show');
+}
+function hideTalkingBanner() { document.getElementById('talkingBanner').classList.remove('show'); }
+
+// ═══════════════════════════════════════════════
+// UTILITY BUTTONS
+// ═══════════════════════════════════════════════
+function toggleMute() {
+  state.muted = !state.muted;
+  if (state.stream) state.stream.getAudioTracks().forEach(t => t.enabled = !state.muted);
+  const btn = document.getElementById('muteBtn');
+  btn.textContent = state.muted ? '🔇' : '🎙️';
+  btn.classList.toggle('active-util', state.muted);
+  showToast(state.muted ? 'Muted' : 'Unmuted');
+}
+
+function toggleSpeaker() {
+  state.speakerOn = !state.speakerOn;
+  const btn = document.getElementById('speakerBtn');
+  btn.textContent = state.speakerOn ? '🔊' : '🔈';
+  btn.classList.toggle('active-util', !state.speakerOn);
+  showToast(state.speakerOn ? 'Speaker on' : 'Speaker off');
+}
+
+function shareLocation() {
+  if (!navigator.geolocation) { showToast('Location not available'); return; }
+  showToast('Getting location…');
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lng } = pos.coords;
+    const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+
+    // Open map for the sender so they can confirm the pin
+    window.open(mapsUrl, '_blank');
+
+    // Add a location message to the channel history
+    const msg = {
+      id:        `loc-${Date.now()}`,
+      userId:    socket?.id || 'me',
+      handle:    state.handle,
+      timestamp: Date.now(),
+      isLocation: true,
+      lat, lng,
+      mapsUrl,
+    };
+    if (!state.messages[state.activeChId]) state.messages[state.activeChId] = [];
+    state.messages[state.activeChId].push(msg);
+    renderMessages();
+
+    // Broadcast to channel via server
+    if (socket?.connected) {
+      socket.emit('ptt_stop', {
+        channelId: state.activeChId,
+        duration: 0,
+        messageId: msg.id,
+        isLocation: true,
+        lat, lng, mapsUrl,
+      });
+    }
+
+    showToast('📍 Pin dropped');
+    document.getElementById('locationBtn').classList.add('active-util');
+    setTimeout(() => document.getElementById('locationBtn').classList.remove('active-util'), 3000);
+  }, () => showToast('Location denied — check permissions'));
+}
+
+function triggerSOS() {
+  if (!confirm('Send SOS alert to all your channels?')) return;
+  showToast('🆘 SOS SENT', 'var(--red)');
+  navigator.geolocation.getCurrentPosition(pos => {
+    if (socket?.connected) {
+      socket.emit('ptt_start', { channelId: state.activeChId });
+      socket.emit('ptt_stop', { channelId: state.activeChId, duration: 0, messageId: `SOS-${Date.now()}` });
+    }
+  }, () => {
+    if (socket?.connected) socket.emit('ptt_start', { channelId: state.activeChId });
+  });
+  if (navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+}
+
+function toggleModePill() {
+  state.mode = state.mode==='work'?'fun':'work';
+  const pill = document.getElementById('modePill');
+  pill.className = 'mode-pill ' + state.mode;
+  pill.textContent = state.mode==='work'?'⚙ SHIFT':'🎉 FUN';
+  localStorage.setItem('10-4-mode', state.mode);
+  showToast(state.mode==='work'?'Shift Mode':'Fun Mode');
+}
+
+// ═══════════════════════════════════════════════
+// PROFILE
+// ═══════════════════════════════════════════════
+function updateProfileUI() {
+  const av = state.handle.slice(0,2).toUpperCase();
+  document.getElementById('pfAv').textContent     = av;
+  document.getElementById('pfHandle').innerHTML   = `<span>@</span>${state.handle}`;
+  document.getElementById('headerHandle').textContent = '@' + state.handle;
+  document.getElementById('chHeaderHandle').textContent = '@' + state.handle;
+}
+
+function setStatus(s) {
+  state.status = s;
+  ['shift','online','dnd'].forEach(id => document.getElementById('pf-'+id).classList.toggle('active', id===s));
+  if (socket?.connected) socket.emit('set_status', { status: s });
+  showToast(s==='shift'?'On Shift':s==='online'?'Online':'Do Not Disturb');
+}
+
+function setNC(val) {
+  document.getElementById('ncDesc').textContent = val==='high'?'High — aggressive':val==='medium'?'Medium':'Off';
+  if (state.stream) {
+    state.stream.getAudioTracks().forEach(t => {
+      if (t.applyConstraints) t.applyConstraints({ noiseSuppression: val!=='off', echoCancellation: true });
+    });
+  }
+}
+
+function pairBT() {
+  if (!navigator.bluetooth) { showToast('Bluetooth not supported in browser'); return; }
+  showToast('Scanning for PTT devices…');
+}
+
+function signOut() {
+  if (!confirm('Sign out of 10-4?')) return;
+  localStorage.clear();
+  location.reload();
+}
+
+// ═══════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════
+let toastTimer;
+function showToast(msg, bg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = bg || 'var(--orange)';
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+// ═══════════════════════════════════════════════
+// RESTORE SESSION
+// ═══════════════════════════════════════════════
+function restoreSession() {
+  const handle = localStorage.getItem('10-4-handle');
+  const mode   = localStorage.getItem('10-4-mode');
+  const pin    = localStorage.getItem('10-4-pin');
+  if (handle && mode) {
+    state.handle = handle;
+    state.mode   = mode;
+    // Pre-load the app in background
+    updateProfileUI();
+    initSocket();
+    initMic();
+    addDefaultChannels();
+    const savedChId   = localStorage.getItem('10-4-activeChId');
+    const savedChName = localStorage.getItem('10-4-activeChName');
+    if (savedChId && savedChName) {
+      const ch = state.channels.find(c=>c.id===savedChId) || { id:savedChId, name:savedChName, icon:'📻', color:'#FF6B1A', members:0, talking:null, joined:false };
+      joinChannel(ch);
+    }
+    if (pin) {
+      // Show PIN lock screen
+      pinEntry = '';
+      renderPinDots();
+      document.getElementById('screen-onboarding').classList.remove('active');
+      document.getElementById('screen-pin').classList.add('active');
+      currentScreen = 'screen-pin';
+    } else {
+      // No PIN set — go straight to app
+      document.getElementById('screen-onboarding').classList.remove('active');
+      document.getElementById('screen-radio').classList.add('active');
+      currentScreen = 'screen-radio';
+    }
+    return true;
+  }
+  return false;
+}
+
+// ═══════════════════════════════════════════════
+// SERVICE WORKER
+// ═══════════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+
+// ═══════════════════════════════════════════════
+// PIN LOCK
+// ═══════════════════════════════════════════════
+let pinEntry = '';
+let setPinEntry = '', setPinFirst = '', setPinMode = 'create';
+
+const PIN_KEYS = ['1','2','3','4','5','6','7','8','9','⌫','0',''];
+const PIN_ALPHA = {'2':'ABC','3':'DEF','4':'GHI','5':'JKL','6':'MNO','7':'PQRS','8':'TUV','9':'WXYZ'};
+
+function buildPinKeypad(containerId, pressHandler) {
+  const kp = document.getElementById(containerId);
+  if (!kp || kp.dataset.built) return;
+  kp.dataset.built = '1';
+  PIN_KEYS.forEach(k => {
+    const btn = document.createElement('div');
+    btn.className = 'pin-key' + (k === '⌫' ? ' del' : '') + (k === '' ? ' del' : '');
+    if (k !== '') {
+      btn.innerHTML = `<div class="pin-key-num">${k}</div>${PIN_ALPHA[k] ? `<div class="pin-key-alpha">${PIN_ALPHA[k]}</div>` : ''}`;
+      btn.onclick = () => pressHandler(k);
+    }
+    kp.appendChild(btn);
+  });
+}
+
+function renderPinDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('pd' + i);
+    d.classList.remove('filled','error');
+    if (i < pinEntry.length) d.classList.add('filled');
+  }
+}
+
+function pinPress(k) {
+  if (k === '⌫') { pinEntry = pinEntry.slice(0,-1); }
+  else if (pinEntry.length < 4) { pinEntry += k; }
+  renderPinDots();
+  if (pinEntry.length === 4) {
+    const stored = localStorage.getItem('10-4-pin');
+    if (pinEntry === stored) {
+      // Correct — enter app
+      setTimeout(() => {
+        goScreen('screen-radio');
+        requestImmersive();
+      }, 150);
+    } else {
+      // Wrong — shake and reset
+      for (let i = 0; i < 4; i++) {
+        const d = document.getElementById('pd' + i);
+        d.classList.add('error'); d.classList.remove('filled');
+      }
+      setTimeout(() => {
+        pinEntry = '';
+        renderPinDots();
+        if (navigator.vibrate) navigator.vibrate([80,40,80]);
+        document.getElementById('pinLabel').textContent = 'Wrong PIN — try again';
+        setTimeout(() => document.getElementById('pinLabel').textContent = 'Enter your PIN', 2000);
+      }, 400);
+    }
+  }
+}
+
+function pinForgot() {
+  if (confirm('This will sign you out and clear your PIN. Continue?')) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+// ── SET PIN (during onboarding) ──
+function renderSetPinDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('spd' + i);
+    d.classList.remove('filled','error');
+    if (i < setPinEntry.length) d.classList.add('filled');
+  }
+}
+
+function setPinPress(k) {
+  if (k === '⌫') { setPinEntry = setPinEntry.slice(0,-1); }
+  else if (setPinEntry.length < 4) { setPinEntry += k; }
+  renderSetPinDots();
+  if (setPinEntry.length === 4) {
+    if (setPinMode === 'create') {
+      // Ask to confirm
+      setPinFirst = setPinEntry;
+      setPinEntry = '';
+      setPinMode  = 'confirm';
+      document.getElementById('setPinLabel').textContent = 'Confirm your PIN';
+      renderSetPinDots();
+    } else {
+      // Confirm
+      if (setPinEntry === setPinFirst) {
+        localStorage.setItem('10-4-pin', setPinEntry);
+        showToast('PIN set ✓');
+        updateProfileUI();
+        initSocket();
+        initMic();
+        addDefaultChannels();
+        setTimeout(() => {
+          goScreen('screen-radio');
+          requestImmersive();
+        }, 300);
+      } else {
+        // Mismatch
+        for (let i = 0; i < 4; i++) {
+          const d = document.getElementById('spd' + i);
+          d.classList.add('error'); d.classList.remove('filled');
+        }
+        setTimeout(() => {
+          setPinEntry = ''; setPinFirst = ''; setPinMode = 'create';
+          document.getElementById('setPinLabel').textContent = 'PINs didn\'t match — try again';
+          renderSetPinDots();
+          setTimeout(() => document.getElementById('setPinLabel').textContent = 'Create a 4-digit PIN', 2000);
+        }, 400);
+      }
+    }
+  }
+}
+
+// Change PIN from profile (add a button in settings later)
+function changePin() {
+  setPinMode = 'create';
+  setPinEntry = ''; setPinFirst = '';
+  document.getElementById('setPinStepLabel').textContent = 'Security';
+  document.getElementById('setPinLabel').textContent = 'Create a new PIN';
+  renderSetPinDots();
+  goScreen('screen-setpin');
+}
+
+// Build keypads on load
+buildPinKeypad('pinKeypad', pinPress);
+buildPinKeypad('setPinKeypad', setPinPress);
+
+// ═══════════════════════════════════════════════
+// IMMERSIVE / FULLSCREEN MODE
+// ═══════════════════════════════════════════════
+function requestImmersive() {
+  // Android: Fullscreen API hides nav bar, user swipes to get it back
+  const el = document.documentElement;
+  if (el.requestFullscreen) {
+    el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen();
+  }
+}
+
+// Re-request immersive on tap (Android loses it sometimes)
+document.addEventListener('click', () => {
+  if (currentScreen === 'screen-radio' && !document.fullscreenElement && !document.webkitFullscreenElement) {
+    requestImmersive();
+  }
+});
+
+// iOS: already handled by apple-mobile-web-app-capable meta tag
+// When installed to home screen on iPhone, bars are hidden automatically
+// On Android Chrome installed PWA, fullscreen API works
+
+// ═══════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════
+restoreSession();
+</script>
+</body>
+</html>
