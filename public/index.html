@@ -116,7 +116,7 @@
   .ch-switch-btn { background: var(--panel); border: 1px solid var(--border); color: var(--orange); border-radius: 8px; padding: 8px 12px; font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 700; letter-spacing: 1px; cursor: pointer; }
 
   /* Waveform */
-  .wave-wrap { padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+  .wave-wrap { padding: 0 20px; height: 40px; display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
   .wbar { flex: 1; background: var(--border); border-radius: 2px; height: 6px; transition: height 0.05s, background 0.15s; }
   .wbar.on { background: var(--orange); }
 
@@ -282,6 +282,29 @@
   /* Connection banner */
   .conn-banner { background: #1a1a08; border-bottom: 1px solid #4a4a00; padding: 6px 20px; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--amber); text-align: center; display: none; flex-shrink: 0; }
   .conn-banner.show { display: block; }
+
+  /* ── PIN SCREEN ── */
+  #screen-pin { justify-content: center; align-items: center; text-align: center; padding: 0 32px; }
+  .pin-logo { font-family: 'Black Han Sans', sans-serif; font-size: 42px; color: var(--orange); letter-spacing: -1px; margin-bottom: 4px; }
+  .pin-logo span { color: var(--cream); }
+  .pin-sub { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); margin-bottom: 40px; text-transform: uppercase; }
+  .pin-dots { display: flex; gap: 16px; justify-content: center; margin-bottom: 40px; }
+  .pin-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--border); transition: all 0.15s; }
+  .pin-dot.filled { background: var(--orange); border-color: var(--orange); transform: scale(1.1); }
+  .pin-dot.error  { background: var(--red); border-color: var(--red); animation: shake 0.3s ease; }
+  @keyframes shake { 0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)} }
+  .pin-keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 280px; }
+  .pin-key { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 0; display: flex; flex-direction: column; align-items: center; cursor: pointer; transition: background 0.1s, border-color 0.1s; -webkit-tap-highlight-color: transparent; }
+  .pin-key:active { background: #2a1508; border-color: var(--orange); }
+  .pin-key-num { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 700; color: var(--cream); line-height: 1; }
+  .pin-key-alpha { font-family: 'Inter', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 2px; color: var(--muted); margin-top: 2px; }
+  .pin-key.del { background: transparent; border-color: transparent; }
+  .pin-key.del .pin-key-num { color: var(--muted); font-size: 22px; }
+  .pin-forgot { font-family: 'Barlow Condensed', sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 1px; color: var(--muted); margin-top: 28px; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* ── PIN SET SCREEN ── */
+  #screen-setpin { justify-content: center; align-items: center; text-align: center; padding: 0 32px; }
+  .setpin-step-label { font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--orange); margin-bottom: 12px; }
 </style>
 </head>
 <body>
@@ -305,6 +328,39 @@
     <button class="btn-primary" onclick="goScreen('screen-handle')">Get Started</button>
     <button class="btn-ghost" onclick="goScreen('screen-handle')">I already have an account</button>
   </div>
+  <div class="safe-bottom"></div>
+</div>
+
+
+<!-- ═══════════════════════════════ PIN LOCK ═══ -->
+<div class="screen" id="screen-pin">
+  <div class="safe-top"></div>
+  <div class="pin-logo">10<span>-4</span></div>
+  <div class="pin-sub" id="pinLabel">Enter your PIN</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-keypad" id="pinKeypad"></div>
+  <div class="pin-forgot" onclick="pinForgot()">Forgot PIN? Sign out</div>
+  <div class="safe-bottom"></div>
+</div>
+
+<!-- ═══════════════════════════════ SET PIN ═══ -->
+<div class="screen" id="screen-setpin">
+  <div class="safe-top"></div>
+  <div class="pin-logo">10<span>-4</span></div>
+  <div class="setpin-step-label" id="setPinStepLabel">Step 3 of 3</div>
+  <div class="pin-sub" id="setPinLabel">Create a 4-digit PIN</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="spd0"></div>
+    <div class="pin-dot" id="spd1"></div>
+    <div class="pin-dot" id="spd2"></div>
+    <div class="pin-dot" id="spd3"></div>
+  </div>
+  <div class="pin-keypad" id="setPinKeypad"></div>
   <div class="safe-bottom"></div>
 </div>
 
@@ -579,7 +635,19 @@
   </div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script>
+// Load Socket.io — from server if available, CDN as fallback
+(function() {
+  var s = document.createElement('script');
+  s.src = '/socket.io/socket.io.js';
+  s.onerror = function() {
+    var fb = document.createElement('script');
+    fb.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
+    document.head.appendChild(fb);
+  };
+  document.head.appendChild(s);
+})();
+</script>
 <script>
 'use strict';
 
@@ -679,11 +747,14 @@ function finishOnboarding() {
   state.mode   = selectedMode;
   localStorage.setItem('10-4-handle', state.handle);
   localStorage.setItem('10-4-mode',   state.mode);
-  updateProfileUI();
-  initSocket();
-  initMic();
-  addDefaultChannels();
-  goScreen('screen-radio');
+  // Go to PIN setup before launching app
+  setPinMode = 'create';
+  setPinEntry = '';
+  setPinFirst = '';
+  document.getElementById('setPinStepLabel').textContent = 'Step 3 of 3';
+  document.getElementById('setPinLabel').textContent = 'Create a 4-digit PIN';
+  renderSetPinDots();
+  goScreen('screen-setpin');
 }
 
 function addDefaultChannels() {
@@ -700,6 +771,7 @@ function addDefaultChannels() {
 // ═══════════════════════════════════════════════
 let socket;
 function initSocket() {
+  if (typeof io === "undefined") { console.warn("Socket.io not loaded yet, retrying..."); setTimeout(initSocket, 500); return; }
   socket = io(SERVER_URL, { transports: ['websocket','polling'] });
 
   socket.on('connect', () => {
@@ -1155,17 +1227,17 @@ function renderMessages() {
     el.className = 'msg-item'; el.id = 'msg-' + msg.id;
     const av = (msg.handle||'?').slice(0,2).toUpperCase();
     const timeStr = new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-    const durStr  = msg.duration ? `0:${String(msg.duration).padStart(2,'0')}` : '';
-    const isMe    = msg.handle === state.handle;
-    el.innerHTML = `
-      <div class="msg-av" style="${isMe?'background:#2a1508;border:1.5px solid var(--orange);':'background:#1a2a3a;'}">${av}</div>
-      <div class="msg-body">
-        <div class="msg-handle">${isMe?'You':msg.handle}</div>
-        <div class="msg-meta">${timeStr}${durStr?' · '+durStr:''}</div>
-      </div>
-      <div class="msg-play">▶</div>
-    `;
-    el.onclick = () => playMessage(msg);
+    const isMe = msg.handle === state.handle;
+    const avStyle = isMe ? 'background:#2a1508;border:1.5px solid var(--orange);' : 'background:#1a2a3a;';
+    if (msg.isLocation) {
+      el.style.borderColor = '#3a6a3a';
+      el.innerHTML = `<div class="msg-av" style="${avStyle}">📍</div><div class="msg-body"><div class="msg-handle">${isMe?'You':msg.handle} dropped a pin</div><div class="msg-meta">${timeStr} · Tap to open map</div></div><div class="msg-play" style="background:#1a3a1a;font-size:14px;">🗺️</div>`;
+      el.onclick = () => window.open(msg.mapsUrl, '_blank');
+    } else {
+      const durStr = msg.duration ? `0:${String(msg.duration).padStart(2,'0')}` : '';
+      el.innerHTML = `<div class="msg-av" style="${avStyle}">${av}</div><div class="msg-body"><div class="msg-handle">${isMe?'You':msg.handle}</div><div class="msg-meta">${timeStr}${durStr?' · '+durStr:''}</div></div><div class="msg-play">▶</div>`;
+      el.onclick = () => playMessage(msg);
+    }
     area.appendChild(el);
   });
   // Scroll to bottom
@@ -1204,16 +1276,43 @@ function toggleSpeaker() {
 
 function shareLocation() {
   if (!navigator.geolocation) { showToast('Location not available'); return; }
+  showToast('Getting location…');
   navigator.geolocation.getCurrentPosition(pos => {
     const { latitude: lat, longitude: lng } = pos.coords;
-    const url = `https://maps.google.com/?q=${lat},${lng}`;
-    showToast('Location shared');
+    const mapsUrl = `https://maps.google.com/?q=${lat},${lng}`;
+
+    // Open map for the sender so they can confirm the pin
+    window.open(mapsUrl, '_blank');
+
+    // Add a location message to the channel history
+    const msg = {
+      id:        `loc-${Date.now()}`,
+      userId:    socket?.id || 'me',
+      handle:    state.handle,
+      timestamp: Date.now(),
+      isLocation: true,
+      lat, lng,
+      mapsUrl,
+    };
+    if (!state.messages[state.activeChId]) state.messages[state.activeChId] = [];
+    state.messages[state.activeChId].push(msg);
+    renderMessages();
+
+    // Broadcast to channel via server
     if (socket?.connected) {
-      socket.emit('audio_chunk', { channelId: state.activeChId, chunk: `LOCATION:${lat},${lng}` });
+      socket.emit('ptt_stop', {
+        channelId: state.activeChId,
+        duration: 0,
+        messageId: msg.id,
+        isLocation: true,
+        lat, lng, mapsUrl,
+      });
     }
+
+    showToast('📍 Pin dropped');
     document.getElementById('locationBtn').classList.add('active-util');
     setTimeout(() => document.getElementById('locationBtn').classList.remove('active-util'), 3000);
-  }, () => showToast('Location denied'));
+  }, () => showToast('Location denied — check permissions'));
 }
 
 function triggerSOS() {
@@ -1296,9 +1395,11 @@ function showToast(msg, bg) {
 function restoreSession() {
   const handle = localStorage.getItem('10-4-handle');
   const mode   = localStorage.getItem('10-4-mode');
+  const pin    = localStorage.getItem('10-4-pin');
   if (handle && mode) {
     state.handle = handle;
     state.mode   = mode;
+    // Pre-load the app in background
     updateProfileUI();
     initSocket();
     initMic();
@@ -1309,10 +1410,19 @@ function restoreSession() {
       const ch = state.channels.find(c=>c.id===savedChId) || { id:savedChId, name:savedChName, icon:'📻', color:'#FF6B1A', members:0, talking:null, joined:false };
       joinChannel(ch);
     }
-    // Skip onboarding
-    document.getElementById('screen-onboarding').classList.remove('active');
-    document.getElementById('screen-radio').classList.add('active');
-    currentScreen = 'screen-radio';
+    if (pin) {
+      // Show PIN lock screen
+      pinEntry = '';
+      renderPinDots();
+      document.getElementById('screen-onboarding').classList.remove('active');
+      document.getElementById('screen-pin').classList.add('active');
+      currentScreen = 'screen-pin';
+    } else {
+      // No PIN set — go straight to app
+      document.getElementById('screen-onboarding').classList.remove('active');
+      document.getElementById('screen-radio').classList.add('active');
+      currentScreen = 'screen-radio';
+    }
     return true;
   }
   return false;
@@ -1324,6 +1434,164 @@ function restoreSession() {
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(() => {});
 }
+
+
+// ═══════════════════════════════════════════════
+// PIN LOCK
+// ═══════════════════════════════════════════════
+let pinEntry = '';
+let setPinEntry = '', setPinFirst = '', setPinMode = 'create';
+
+const PIN_KEYS = ['1','2','3','4','5','6','7','8','9','⌫','0',''];
+const PIN_ALPHA = {'2':'ABC','3':'DEF','4':'GHI','5':'JKL','6':'MNO','7':'PQRS','8':'TUV','9':'WXYZ'};
+
+function buildPinKeypad(containerId, pressHandler) {
+  const kp = document.getElementById(containerId);
+  if (!kp || kp.dataset.built) return;
+  kp.dataset.built = '1';
+  PIN_KEYS.forEach(k => {
+    const btn = document.createElement('div');
+    btn.className = 'pin-key' + (k === '⌫' ? ' del' : '') + (k === '' ? ' del' : '');
+    if (k !== '') {
+      btn.innerHTML = `<div class="pin-key-num">${k}</div>${PIN_ALPHA[k] ? `<div class="pin-key-alpha">${PIN_ALPHA[k]}</div>` : ''}`;
+      btn.onclick = () => pressHandler(k);
+    }
+    kp.appendChild(btn);
+  });
+}
+
+function renderPinDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('pd' + i);
+    d.classList.remove('filled','error');
+    if (i < pinEntry.length) d.classList.add('filled');
+  }
+}
+
+function pinPress(k) {
+  if (k === '⌫') { pinEntry = pinEntry.slice(0,-1); }
+  else if (pinEntry.length < 4) { pinEntry += k; }
+  renderPinDots();
+  if (pinEntry.length === 4) {
+    const stored = localStorage.getItem('10-4-pin');
+    if (pinEntry === stored) {
+      // Correct — enter app
+      setTimeout(() => {
+        goScreen('screen-radio');
+        requestImmersive();
+      }, 150);
+    } else {
+      // Wrong — shake and reset
+      for (let i = 0; i < 4; i++) {
+        const d = document.getElementById('pd' + i);
+        d.classList.add('error'); d.classList.remove('filled');
+      }
+      setTimeout(() => {
+        pinEntry = '';
+        renderPinDots();
+        if (navigator.vibrate) navigator.vibrate([80,40,80]);
+        document.getElementById('pinLabel').textContent = 'Wrong PIN — try again';
+        setTimeout(() => document.getElementById('pinLabel').textContent = 'Enter your PIN', 2000);
+      }, 400);
+    }
+  }
+}
+
+function pinForgot() {
+  if (confirm('This will sign you out and clear your PIN. Continue?')) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+// ── SET PIN (during onboarding) ──
+function renderSetPinDots() {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('spd' + i);
+    d.classList.remove('filled','error');
+    if (i < setPinEntry.length) d.classList.add('filled');
+  }
+}
+
+function setPinPress(k) {
+  if (k === '⌫') { setPinEntry = setPinEntry.slice(0,-1); }
+  else if (setPinEntry.length < 4) { setPinEntry += k; }
+  renderSetPinDots();
+  if (setPinEntry.length === 4) {
+    if (setPinMode === 'create') {
+      // Ask to confirm
+      setPinFirst = setPinEntry;
+      setPinEntry = '';
+      setPinMode  = 'confirm';
+      document.getElementById('setPinLabel').textContent = 'Confirm your PIN';
+      renderSetPinDots();
+    } else {
+      // Confirm
+      if (setPinEntry === setPinFirst) {
+        localStorage.setItem('10-4-pin', setPinEntry);
+        showToast('PIN set ✓');
+        updateProfileUI();
+        initSocket();
+        initMic();
+        addDefaultChannels();
+        setTimeout(() => {
+          goScreen('screen-radio');
+          requestImmersive();
+        }, 300);
+      } else {
+        // Mismatch
+        for (let i = 0; i < 4; i++) {
+          const d = document.getElementById('spd' + i);
+          d.classList.add('error'); d.classList.remove('filled');
+        }
+        setTimeout(() => {
+          setPinEntry = ''; setPinFirst = ''; setPinMode = 'create';
+          document.getElementById('setPinLabel').textContent = 'PINs didn\'t match — try again';
+          renderSetPinDots();
+          setTimeout(() => document.getElementById('setPinLabel').textContent = 'Create a 4-digit PIN', 2000);
+        }, 400);
+      }
+    }
+  }
+}
+
+// Change PIN from profile (add a button in settings later)
+function changePin() {
+  setPinMode = 'create';
+  setPinEntry = ''; setPinFirst = '';
+  document.getElementById('setPinStepLabel').textContent = 'Security';
+  document.getElementById('setPinLabel').textContent = 'Create a new PIN';
+  renderSetPinDots();
+  goScreen('screen-setpin');
+}
+
+// Build keypads on load
+buildPinKeypad('pinKeypad', pinPress);
+buildPinKeypad('setPinKeypad', setPinPress);
+
+// ═══════════════════════════════════════════════
+// IMMERSIVE / FULLSCREEN MODE
+// ═══════════════════════════════════════════════
+function requestImmersive() {
+  // Android: Fullscreen API hides nav bar, user swipes to get it back
+  const el = document.documentElement;
+  if (el.requestFullscreen) {
+    el.requestFullscreen({ navigationUI: 'hide' }).catch(() => {});
+  } else if (el.webkitRequestFullscreen) {
+    el.webkitRequestFullscreen();
+  }
+}
+
+// Re-request immersive on tap (Android loses it sometimes)
+document.addEventListener('click', () => {
+  if (currentScreen === 'screen-radio' && !document.fullscreenElement && !document.webkitFullscreenElement) {
+    requestImmersive();
+  }
+});
+
+// iOS: already handled by apple-mobile-web-app-capable meta tag
+// When installed to home screen on iPhone, bars are hidden automatically
+// On Android Chrome installed PWA, fullscreen API works
 
 // ═══════════════════════════════════════════════
 // BOOT
